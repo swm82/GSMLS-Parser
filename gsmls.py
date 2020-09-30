@@ -13,7 +13,7 @@ class Property:
         self.mlsnumber = mlsnumber
 
     def __str__(self):
-        return self.address + " - " + self.price
+        return self.address + " - " + "${:,.2f}".format(self.price)
 
 def export_properties(properties):
     output = open("test", 'wb')
@@ -26,9 +26,21 @@ def import_properties():
     input.close()
     return properties
 
-# def get_new_listings(current_data, new_data):
-#     for curr_property in current_data:
-#         for new_property in new_data:
+def get_new_listings(current_data, new_data):
+    new_listing = []
+    for current_property in current_data:
+        if new_data.get(current_property) is None:
+            new_listing.append(current_property)
+
+    return new_listing
+
+def get_price_changes(current_data, new_data):
+    price_changes = []
+    for mlsnum, property in current_data.items():
+        if new_data.get(mlsnum) is not None:
+            if new_data.get(mlsnum).price != property.price:
+                price_changes.append(new_data.get(mlsnum))
+    return price_changes
 
 
 
@@ -60,13 +72,13 @@ def parse_data(county, town, maxPrice):
     elem.click()
 
     # Get addresses
-    addys = browser.find_elements_by_class_name('address')
+    addresses = browser.find_elements_by_class_name('address')
     #Get prices
     prices = browser.find_elements_by_css_selector('div.formline140.floatholder > p')
 
     #Get MLS numbers
     mlsnum = []
-    for i in range(2, 2 * len(addys) + 1, 2):
+    for i in range(2, 2 * len(addresses) + 1, 2):
         selector = f'#propsearch > div.bufer > div > div:nth-child({i}) > div:nth-child(2) > div > div:nth-child(1)'
         element = browser.find_elements_by_css_selector(selector)
         mlsnumber = int(re.search("\d+", element[0].text).group())
@@ -75,8 +87,9 @@ def parse_data(county, town, maxPrice):
     #Print data
     properties = {}
 
-    for i in range(len(addys)):
-        property = Property(addys[i].text, prices[i].text, mlsnum[i])
+    for i in range(len(addresses)):
+        price = int(''.join(re.findall("\d+", prices[i].text)))
+        property = Property(addresses[i].text, price, mlsnum[i])
         properties[mlsnum[i]] = property
 
     browser.close()
@@ -86,18 +99,19 @@ county = sys.argv[1]
 town = sys.argv[2]
 maxPrice = sys.argv[3]
 
-# properties = import_properties()
+curr_properties = import_properties()
 
-properties = parse_data(county, town, maxPrice)
-
-for x in properties:
-    print(properties[x].mlsnumber)
-
+# new_properties = parse_data(county, town, maxPrice)
+# export_properties(new_properties)
+# new_listings = get_new_listings(curr_properties, new_properties)
+new_prices = get_price_changes(curr_properties, curr_properties)
+print("PRICE CHANGES:")
+for x in new_prices:
+    print(x)
 
 # TODO
 # catch errors in input town/county, max price
 # sort the list
-# implement properties as objects
 # match objects, - if new - create new, alert to new properties
 # match objects - if price change alert
 # define stuff as methods
