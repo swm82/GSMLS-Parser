@@ -3,6 +3,7 @@ from selenium.webdriver.support.ui import Select
 import time
 import sys
 import pickle
+import re
 
 
 class Property:
@@ -14,14 +15,24 @@ class Property:
     def __str__(self):
         return self.address + " - " + self.price
 
-def saveProperties(properties):
+def export_properties(properties):
     output = open("test", 'wb')
     pickle.dump(properties, output)
     output.close()
 
+def import_properties():
+    input = open("test", 'rb')
+    properties = pickle.load(input)
+    input.close()
+    return properties
+
+# def get_new_listings(current_data, new_data):
+#     for curr_property in current_data:
+#         for new_property in new_data:
 
 
-def parseData(county, town, maxPrice):
+
+def parse_data(county, town, maxPrice):
     browser = webdriver.Firefox(executable_path=r'/usr/local/bin/geckodriver')
     browser.get('http://gsmls.com')
     elem = browser.find_element_by_css_selector('#content > div.content-right-corner2 > div > div > div > div.w69p.l.padb10 > div > div > div > div > div > p > a > img')
@@ -58,7 +69,8 @@ def parseData(county, town, maxPrice):
     for i in range(2, 2 * len(addys) + 1, 2):
         selector = f'#propsearch > div.bufer > div > div:nth-child({i}) > div:nth-child(2) > div > div:nth-child(1)'
         element = browser.find_elements_by_css_selector(selector)
-        mlsnum.append(element[0].text)
+        mlsnumber = int(re.search("\d+", element[0].text).group())
+        mlsnum.append(mlsnumber)
 
     #Print data
     properties = {}
@@ -74,10 +86,12 @@ county = sys.argv[1]
 town = sys.argv[2]
 maxPrice = sys.argv[3]
 
-properties = parseData(county, town, maxPrice)
+# properties = import_properties()
+
+properties = parse_data(county, town, maxPrice)
 
 for x in properties:
-    print(properties[x])
+    print(properties[x].mlsnumber)
 
 
 # TODO
