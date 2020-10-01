@@ -26,12 +26,19 @@ def import_properties():
     input.close()
     return properties
 
-def get_new_listings(current_data, new_data):
-    new_listing = []
+def get_dropped_listings(current_data, new_data):
+    dropped_listing = []
     for current_property in current_data:
         if new_data.get(current_property) is None:
-            new_listing.append(current_property)
+            dropped_listing.append(current_data[current_property])
 
+    return dropped_listing
+
+def get_new_listings(current_data, new_data):
+    new_listing = []
+    for new_property in new_data:
+        if current_data.get(new_property) is None:
+            new_listing.append(new_data[new_property])
     return new_listing
 
 def get_price_changes(current_data, new_data):
@@ -99,19 +106,42 @@ county = sys.argv[1]
 town = sys.argv[2]
 maxPrice = sys.argv[3]
 
+# import previously seen properties
 curr_properties = import_properties()
 
-# new_properties = parse_data(county, town, maxPrice)
-# export_properties(new_properties)
-# new_listings = get_new_listings(curr_properties, new_properties)
+# parse data on GSMLS
+new_properties = parse_data(county, town, maxPrice)
+
+# print all properties
+for key, value in new_properties.items():
+    print(str(key) + " - " + value.address)
+
+# find new listings
+new_listings = get_new_listings(curr_properties, new_properties)
+print("NEW LISTINGS")
+for x in new_listings:
+    print(x.address)
+
+# check for properties removed from gsmls
+dropped_listings = get_dropped_listings(curr_properties, new_properties)
+print("REMOVED LISTINGS")
+for x in dropped_listings:
+    print(x.address)
+
+# check for price changes
 new_prices = get_price_changes(curr_properties, curr_properties)
 print("PRICE CHANGES:")
 for x in new_prices:
     print(x)
 
+result = input("Export updated listings? Y/N: ")
+if result.lower() == 'y':
+    export_properties(new_properties)
+    print("updated...")
+
+
 # TODO
 # catch errors in input town/county, max price
-# sort the list
 # match objects, - if new - create new, alert to new properties
 # match objects - if price change alert
 # define stuff as methods
