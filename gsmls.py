@@ -56,7 +56,7 @@ def fetch_page(max_price, county_code, county_name, town_code):
     }
     response = requests.request("POST", url, headers=headers, data=payload)
     soup = BeautifulSoup(response.text, 'html.parser')
-    print(soup.prettify())
+    return soup
 
 if __name__ == '__main__':
     data = get_data()
@@ -65,4 +65,14 @@ if __name__ == '__main__':
     county_code = data[county]['code']
     town_code = data[county]['towns'][town]
     max_price = 450000
-    fetch_page(max_price, county_code, county, town_code)
+    soup = fetch_page(max_price, county_code, county, town_code)
+    props = soup.findAll('div', {'class': 'w30p'})
+   #  print(len(props))
+    # for item in props[0].descendants:
+        # print(item)
+        # print('-------------------------')
+    children = props[0].find_all('a', {'class': 'address'})
+    for child in children:
+        child = ' '.join(child.string.strip().split())
+        print(child)
+
