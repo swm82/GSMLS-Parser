@@ -4,13 +4,22 @@ import time
 import json
 import sys
 from scrapecodes import get_codes
+import re
 
-def get_data():
+class Property:
+
+    def __init__(self, mlsnum, address, price):
+        self.mlsnum = mlsnum
+        self.address = address
+        self.price = price
+
+
+def get_api_codes():
     try:
         with open('county_codes.json') as f:
             data = json.load(f)
     except FileNotFoundError:
-        print("It looks like you need to refetch some data to get started..")
+        print("It looks like you need to fetch some data to get started..")
         resp = ''
         while resp not in ['n', 'y']:
             print("Get county and town codes? Y/N")
@@ -58,21 +67,37 @@ def fetch_page(max_price, county_code, county_name, town_code):
     soup = BeautifulSoup(response.text, 'html.parser')
     return soup
 
+def scrape_property_info(soup):
+    property_tags = soup.findAll('div', {'class': 'w30p'})
+    mlsnum_tags = soup.find_all(attrs={'name': 'selmlsnums'})
+    addresses = []
+    prices = []
+    for i in range(0, len(property_tags), 2):
+        children = property_tags[i].find_all('a', {'class': 'address'})
+        for child in children:
+            address = ' '.join(child.string.strip().split())
+            addresses.append(address)
+        children = property_tags[i].find_all('p', {'class': 'padl10'})
+        for child in children:
+            price = child.string.strip()
+            price = int(re.sub(r"\$|,", '', price)) * 100
+            prices.append(price)
+
+    mlsnums = []
+    for num in mlsnum_tags:
+        z = re.search(r"\d{7}", str(num))
+        mlsnums.append(int(z.group()))
+    props = zip(addresses, prices, mlsnums)
+    return props
+
 if __name__ == '__main__':
-    data = get_data()
+    data = get_api_codes()
     county = get_input(sorted(data.keys()))
     town = get_input(sorted(data[county]['towns'].keys()))
     county_code = data[county]['code']
     town_code = data[county]['towns'][town]
     max_price = 450000
     soup = fetch_page(max_price, county_code, county, town_code)
-    props = soup.findAll('div', {'class': 'w30p'})
-   #  print(len(props))
-    # for item in props[0].descendants:
-        # print(item)
-        # print('-------------------------')
-    children = props[0].find_all('a', {'class': 'address'})
-    for child in children:
-        child = ' '.join(child.string.strip().split())
-        print(child)
-
+    properties = scrape_property_info(soup)
+    for prop in properties:
+        print(prop)
